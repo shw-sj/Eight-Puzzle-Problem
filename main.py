@@ -20,21 +20,36 @@ class EightPuzzleAStar:
         self.goal_positions = {value: idx for idx, value in enumerate(goal_state)}
 
     @staticmethod
-    def is_solvable(state):
-        """
-        判断8数码是否有解（使用逆序数奇偶性）
-        :param state: 一维元组，0表示空白
-        :return: True表示有解，False表示无解
-        """
-        # 移除0后计算逆序数
+    def _inversion_count(state):
+        """计算状态中（不含空白）的逆序数"""
         arr = [x for x in state if x != 0]
         inversions = 0
         for i in range(len(arr)):
             for j in range(i + 1, len(arr)):
                 if arr[i] > arr[j]:
                     inversions += 1
-        # 8数码有解条件：逆序数为偶数
-        return inversions % 2 == 0
+        return inversions
+
+    @staticmethod
+    def _blank_row_from_bottom(state, size=3):
+        """空白格所在行，从下往上数（1-based）"""
+        blank_idx = state.index(0)
+        row_from_top = blank_idx // size
+        return size - row_from_top
+
+    @classmethod
+    def is_solvable(cls, state, goal_state=(1, 2, 3, 4, 5, 6, 7, 8, 0)):
+        """
+        判断初始状态能否到达目标状态（逆序数 + 空白行奇偶性）
+        """
+        size = 3
+        parity = (
+            cls._inversion_count(state) + cls._blank_row_from_bottom(state, size)
+        ) % 2
+        goal_parity = (
+            cls._inversion_count(goal_state) + cls._blank_row_from_bottom(goal_state, size)
+        ) % 2
+        return parity == goal_parity
 
     def find_blank(self, state):
         """返回空白格(0)的索引"""
@@ -92,9 +107,7 @@ class EightPuzzleAStar:
         if heuristic_func is None:
             heuristic_func = self.manhattan_distance
 
-        # 可解性预检测
-        if not self.is_solvable(self.initial_state):
-            print("该初始状态无解！")
+        if not self.is_solvable(self.initial_state, self.goal_state):
             return None, 0
 
         # 定义节点类（使用__slots__节省内存）
