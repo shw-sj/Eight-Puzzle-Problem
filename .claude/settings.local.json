@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m markitdown 实验二.pptx)",
+      "Bash(python3 -m markitdown 实验二.pptx)",
+      "Bash(pip install *)",
+      "Bash(python *)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 120 python experiments/benchmark.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python demo_B模块调用示例.py)"
+    ]
+  }
+}
