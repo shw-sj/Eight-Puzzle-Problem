@@ -25,7 +25,8 @@ from src.heuristic import (
     linear_conflict,
     HEURISTICS,
 )
-from src.solver import idastar as _b_idastar
+from src.solver import idastar as _b_idastar, bfs as _b_bfs
+from src.generator import random_state, verify_astar_path
 
 
 class EightPuzzleAStar:
@@ -172,6 +173,27 @@ class EightPuzzleAStar:
             results.append((name, len(path) - 1 if path else None, expanded))
         return results
 
+    # ── 辅助算法（成员C）────────────────────────────────────────
+
+    @staticmethod
+    def generate_random(goal_state=None, steps=None, difficulty=None, seed=None):
+        """随机生成有解的初始状态（从目标出发随机游走）."""
+        return random_state(goal=goal_state, steps=steps, difficulty=difficulty, seed=seed)
+
+    @staticmethod
+    def verify_path(initial_state, goal_state, path):
+        """BFS 验证 A* 路径是否为最短."""
+        return verify_astar_path(initial_state, goal_state, path)
+
+    def bfs_solve(self):
+        """BFS 求最短路径，返回 (path_states, expanded)."""
+        if not _b_is_solvable(self.initial_state, self.goal_state):
+            return None, 0
+        path_with_actions, expanded = _b_bfs(self.initial_state, self.goal_state)
+        if path_with_actions is None:
+            return None, expanded
+        return [s for s, _ in path_with_actions], expanded
+
     # ── 路径打印 ────────────────────────────────────────────────
 
     @staticmethod
@@ -212,3 +234,13 @@ if __name__ == '__main__':
     solver2 = EightPuzzleAStar(start, goal)
     path_i, expanded_i = solver2.solve_idastar()
     print(f"IDA*: 步数={len(path_i)-1 if path_i else 'None'}, 扩展={expanded_i}")
+
+    # 随机生成 + BFS 验证
+    print("\n=== 随机生成 + BFS 验证 ===")
+    for diff in ("简单", "中等", "困难"):
+        rand_start = EightPuzzleAStar.generate_random(goal_state=goal, difficulty=diff)
+        solver_r = EightPuzzleAStar(rand_start, goal)
+        path_r, exp_r = solver_r.solve()
+        verify = EightPuzzleAStar.verify_path(rand_start, goal, path_r)
+        print(f"  [{diff}] {rand_start}")
+        print(f"    A* 扩展={exp_r}, {verify['message']}")

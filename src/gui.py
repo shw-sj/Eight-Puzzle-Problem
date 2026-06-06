@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from main import EightPuzzleAStar
+from src.generator import random_state, verify_astar_path
 from src.heuristic import HEURISTICS
 
 if sys.platform == "win32":
@@ -121,7 +122,7 @@ class EightPuzzleGUI(tk.Tk):
   def _build_ui(self):
     header = tk.Label(
       self,
-      text="8 数码问题 A* 求解器（曼哈顿距离启发式）",
+      text="8 数码问题 A* 求解器",
       font=("Microsoft YaHei UI", 14, "bold"),
       bg="#f5f5f5",
       fg="#1565c0",
@@ -191,12 +192,33 @@ class EightPuzzleGUI(tk.Tk):
       pady=4,
     ).pack(side="left", padx=6)
 
+    rand_frame = tk.Frame(btn_row, bg="#f5f5f5")
+    rand_frame.pack(side="left", padx=6)
+    self.difficulty_var = tk.StringVar(value="中等")
+    ttk.Combobox(
+      rand_frame,
+      textvariable=self.difficulty_var,
+      values=["简单", "中等", "困难"],
+      state="readonly",
+      width=6,
+      font=("Microsoft YaHei UI", 9),
+    ).pack(side="left", padx=(0, 4))
+    tk.Button(
+      rand_frame,
+      text="随机生成",
+      font=("Microsoft YaHei UI", 10),
+      width=10,
+      command=self._random_generate,
+      padx=8,
+      pady=4,
+    ).pack(side="left")
+
     # 启发式选择（成员B提供 h1~h4）
     heur_frame = tk.Frame(btn_row, bg="#f5f5f5")
     heur_frame.pack(side="left", padx=12)
     tk.Label(heur_frame, text="启发式:", font=("Microsoft YaHei UI", 9),
              bg="#f5f5f5").pack(side="left")
-    self.heuristic_var = tk.StringVar(value="h1")
+    self.heuristic_var = tk.StringVar(value="h1（曼哈顿距离）")
     heur_dropdown = ttk.Combobox(
       heur_frame, textvariable=self.heuristic_var,
       values=[f"{k} ({v[0]})" for k, v in HEURISTICS.items()],
@@ -265,6 +287,15 @@ class EightPuzzleGUI(tk.Tk):
     )
     self.status_label.pack(fill="x")
 
+    self.verify_label = tk.Label(
+      result_frame,
+      text="路径验证：—",
+      font=("Microsoft YaHei UI", 9),
+      anchor="w",
+      fg="#666",
+    )
+    self.verify_label.pack(fill="x", pady=(4, 0))
+
     stats_row = tk.Frame(result_frame)
     stats_row.pack(fill="x", pady=(6, 0))
 
@@ -296,6 +327,24 @@ class EightPuzzleGUI(tk.Tk):
     self._reset_results()
     self.status_label.config(text="状态：已加载示例，点击「开始求解」")
 
+  def _random_generate(self):
+    try:
+      goal = self.goal_board.get_state()
+      PuzzleBoard.validate_state(goal, "目标状态")
+    except ValueError as exc:
+      messagebox.showerror("输入错误", str(exc))
+      return
+
+    difficulty = self.difficulty_var.get()
+    initial = random_state(goal=goal, difficulty=difficulty)
+    self.initial_board.set_state(initial)
+    self.display_board.set_state(initial)
+    self._reset_results()
+    self.status_label.config(
+      text=f"状态：已随机生成「{difficulty}」难度初始状态，点击「开始求解」",
+      fg="#333",
+    )
+
   def _reset_results(self):
     self._stop_animation()
     self.path = []
@@ -304,6 +353,7 @@ class EightPuzzleGUI(tk.Tk):
     self.expanded_var.set("—")
     self.time_var.set("—")
     self.step_label.config(text="步骤：— / —")
+    self.verify_label.config(text="路径验证：—", fg="#666")
     for btn in (self.prev_btn, self.play_btn, self.next_btn):
       btn.config(state="disabled")
 
@@ -346,16 +396,19 @@ class EightPuzzleGUI(tk.Tk):
     def worker():
       start = time.perf_counter()
       solver = EightPuzzleAStar(initial, goal)
-      # 从下拉框提取 heuristic key（如 "h1 (曼哈顿距离)" → "h1"）
       heur_key = self.heuristic_var.get().split()[0]
       path, expanded = solver.solve(heuristic_name=heur_key)
       elapsed = time.perf_counter() - start
-      self.after(0, lambda: self._on_solve_done(path, expanded, elapsed, initial, goal))
+      verify = verify_astar_path(initial, goal, path)
+      self.after(
+        0,
+        lambda: self._on_solve_done(path, expanded, elapsed, initial, goal, verify),
+      )
 
     self.solve_thread = threading.Thread(target=worker, daemon=True)
     self.solve_thread.start()
 
-  def _on_solve_done(self, path, expanded, elapsed, initial, goal):
+  def _on_solve_done(self, path, expanded, elapsed, initial, goal, verify=None):
     self.solve_btn.config(state="normal")
 
     if path is None:
@@ -363,17 +416,27 @@ class EightPuzzleGUI(tk.Tk):
       self.status_label.config(text="状态：搜索失败（未找到路径）", fg="#c62828")
       self.expanded_var.set(str(expanded))
       self.time_var.set(f"{elapsed:.4f}")
+      if verify:
+        self._show_verification(verify)
       return
 
     self.path = path
     self.current_step = 0
     self._update_display()
-    self._show_solution(initial, goal, expanded, elapsed)
+    self._show_solution(initial, goal, expanded, elapsed, verify)
 
     for btn in (self.prev_btn, self.play_btn, self.next_btn):
       btn.config(state="normal")
 
-  def _show_solution(self, initial, goal, expanded, elapsed):
+  def _show_verification(self, verify):
+    color = "#2e7d32" if verify["is_optimal"] else "#c62828"
+    bfs_exp = verify.get("bfs_expanded", "—")
+    self.verify_label.config(
+      text=f"路径验证：{verify['message']}（BFS 扩展 {bfs_exp} 节点）",
+      fg=color,
+    )
+
+  def _show_solution(self, initial, goal, expanded, elapsed, verify=None):
     steps = len(self.path) - 1 if self.path else 0
     self.steps_var.set(str(steps))
     self.expanded_var.set(str(expanded))
@@ -382,6 +445,8 @@ class EightPuzzleGUI(tk.Tk):
       text=f"状态：求解完成！共 {steps} 步，扩展 {expanded} 个节点，耗时 {elapsed:.4f} 秒",
       fg="#2e7d32",
     )
+    if verify:
+      self._show_verification(verify)
 
   def _update_display(self):
     if not self.path:
