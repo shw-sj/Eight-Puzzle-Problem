@@ -18,13 +18,8 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from src.solvability import is_solvable as _b_is_solvable
-from src.heuristic import (
-    manhattan,
-    misplaced_tiles,
-    euclidean,
-    linear_conflict,
-    HEURISTICS,
-)
+from src.heuristic import manhattan, HEURISTICS
+
 from src.solver import idastar as _b_idastar, bfs as _b_bfs
 from src.generator import random_state, verify_astar_path
 
