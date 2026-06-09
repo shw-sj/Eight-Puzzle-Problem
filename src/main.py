@@ -14,6 +14,7 @@
 import heapq
 import sys
 import os
+import time
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -163,9 +164,21 @@ class EightPuzzleAStar:
         """
         results = []
         for key, (name, _fn) in HEURISTICS.items():
+            # =====================
+            # A*
+            # =====================
             solver = cls(initial_state, goal_state)
+            start = time.perf_counter()
             path, expanded = solver.solve(heuristic_name=key)
-            results.append((name, len(path) - 1 if path else None, expanded))
+            elapsed = (time.perf_counter() - start) * 1000
+            results.append(("A*", name,len(path) - 1 if path else None,expanded,round(elapsed, 2)))
+            # =====================
+            # IDA*
+            # =====================
+            start = time.perf_counter()
+            path, expanded = solver.solve_idastar(heuristic_name=key)
+            elapsed = (time.perf_counter() - start) * 1000
+            results.append(("IDA*", name, len(path) - 1 if path else None, expanded, round(elapsed, 2)))
         return results
 
     # ── 辅助算法（成员C）────────────────────────────────────────

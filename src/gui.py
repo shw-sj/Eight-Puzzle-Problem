@@ -119,6 +119,27 @@ class EightPuzzleGUI(tk.Tk):
         self._build_ui()
         self._load_defaults()
 
+    def _compare_heuristics(self):
+        try:
+            initial = tuple(self.initial_board.get_state())
+            goal = tuple(self.goal_board.get_state())
+
+        except Exception as e:
+            messagebox.showerror("输入错误",str(e))
+            return
+
+        results = EightPuzzleAStar.compare_heuristics(initial,goal)
+
+        # 清空旧数据
+        for item in self.compare_table.get_children():
+            self.compare_table.delete(item)
+
+        # 插入新数据
+        for algo, name, path_len, expanded, elapsed in results:
+            self.compare_table.insert("","end",values=(algo, name, path_len, expanded, elapsed))
+
+        self.status_label.config(text="状态：完成启发式性能对比")
+
     def _build_ui(self):
         header = tk.Label(
             self,
@@ -171,7 +192,15 @@ class EightPuzzleGUI(tk.Tk):
             pady=4,
         )
         self.solve_btn.pack(side="left", padx=6)
-
+        tk.Button(
+            btn_row,
+            text="启发式对比",
+            font=("Microsoft YaHei UI", 10),
+            width=10,
+            command=self._compare_heuristics,
+            padx=8,
+            pady=4,
+        ).pack(side="left", padx=6)
         tk.Button(
             btn_row,
             text="重置默认",
@@ -311,6 +340,32 @@ class EightPuzzleGUI(tk.Tk):
         stats_row = tk.Frame(result_frame)
         stats_row.pack(fill="x", pady=(6, 0))
 
+        # ==========================
+        # 启发式对比结果表
+        # ==========================
+        compare_frame = tk.LabelFrame(self, text="启发式性能对比", font=("Microsoft YaHei UI", 10), padx=8, pady=6,)
+        compare_frame.pack(fill="x", padx=16, pady=(0, 14))
+
+        self.compare_table = ttk.Treeview(
+            compare_frame,
+            columns=("algo", "heuristic", "steps", "expanded", "time"),
+            show="headings",
+            height=4,
+        )
+
+        self.compare_table.heading("algo", text="算法")
+        self.compare_table.heading("heuristic", text="启发式")
+        self.compare_table.heading("steps", text="路径长度")
+        self.compare_table.heading("expanded", text="扩展节点数")
+        self.compare_table.heading("time",text="耗时(ms)")
+        self.compare_table.column("algo", width=100, anchor="center")
+        self.compare_table.column("heuristic", width=100, anchor="center")
+        self.compare_table.column("steps", width=100, anchor="center")
+        self.compare_table.column("expanded", width=100, anchor="center")
+        self.compare_table.column("time", width=100, anchor="center")
+
+        self.compare_table.pack(anchor="w", fill="none")
+
         self.steps_var = tk.StringVar(value="—")
         self.expanded_var = tk.StringVar(value="—")
         self.time_var = tk.StringVar(value="—")
@@ -318,7 +373,7 @@ class EightPuzzleGUI(tk.Tk):
         for label, var in [
             ("总步数", self.steps_var),
             ("扩展节点数", self.expanded_var),
-            ("耗时 (秒)", self.time_var),
+            ("耗时(ms)", self.time_var),
         ]:
             box = tk.Frame(stats_row, padx=16)
             box.pack(side="left")
@@ -415,7 +470,7 @@ class EightPuzzleGUI(tk.Tk):
             else:
                 path, expanded = solver.solve_idastar(heuristic_name=heur_key)
             path, expanded = solver.solve(heuristic_name=heur_key)
-            elapsed = time.perf_counter() - start
+            elapsed = (time.perf_counter() - start) * 1000
             verify = verify_astar_path(initial, goal, path)
             self.after(
                 0,
@@ -459,7 +514,7 @@ class EightPuzzleGUI(tk.Tk):
         self.expanded_var.set(str(expanded))
         self.time_var.set(f"{elapsed:.4f}")
         self.status_label.config(
-            text=f"状态：求解完成！共 {steps} 步，扩展 {expanded} 个节点，耗时 {elapsed:.4f} 秒",
+            text=f"状态：求解完成！共 {steps} 步，扩展 {expanded} 个节点，耗时 {elapsed:.4f} ms",
             fg="#2e7d32",
         )
         if verify:
