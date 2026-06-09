@@ -13,6 +13,7 @@
     stats: {'expanded': int, 'time_ms': float, 'path_len': int}
 """
 import heapq
+import math
 import time
 from collections import deque
 
@@ -182,7 +183,7 @@ def idastar(start_1d, goal_1d, heuristic_fn):
                 'time_ms': round((time.perf_counter() - start_time) * 1000, 3),
                 'path_len': 0,
             }
-        threshold = int(t)
+        threshold = math.ceil(t)
 
 
 # ============================================================

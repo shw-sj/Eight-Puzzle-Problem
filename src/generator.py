@@ -6,7 +6,7 @@
 """
 import random
 
-from src import DEFAULT_GOAL
+DEFAULT_GOAL = (1, 2, 3, 4, 5, 6, 7, 8, 0)
 from src.solvability import is_solvable
 from src.solver import bfs, _get_neighbors
 
