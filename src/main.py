@@ -157,28 +157,21 @@ class EightPuzzleAStar:
     # ── 结果对比（成员B的benchmark简化版）────────────────────────
 
     @classmethod
-    def compare_heuristics(cls, initial_state, goal_state=(1, 2, 3, 4, 5, 6, 7, 8, 0)):
+    def compare_heuristics(cls, initial_state, goal_state, algo):
         """
         用全部4种启发式求解并返回对比表.
         返回: [(heuristic_name, path_len, expanded_nodes), ...]
         """
         results = []
         for key, (name, _fn) in HEURISTICS.items():
-            # =====================
-            # A*
-            # =====================
             solver = cls(initial_state, goal_state)
             start = time.perf_counter()
-            path, expanded = solver.solve(heuristic_name=key)
+            if algo=="A*":
+                path, expanded = solver.solve(heuristic_name=key)
+            elif algo=="IDA*":
+                path, expanded = solver.solve_idastar(heuristic_name=key)
             elapsed = (time.perf_counter() - start) * 1000
-            results.append(("A*", name,len(path) - 1 if path else None,expanded,round(elapsed, 2)))
-            # =====================
-            # IDA*
-            # =====================
-            start = time.perf_counter()
-            path, expanded = solver.solve_idastar(heuristic_name=key)
-            elapsed = (time.perf_counter() - start) * 1000
-            results.append(("IDA*", name, len(path) - 1 if path else None, expanded, round(elapsed, 2)))
+            results.append((algo, name, len(path) - 1 if path else None, expanded, round(elapsed, 2)))
         return results
 
     # ── 辅助算法（成员C）────────────────────────────────────────

@@ -127,8 +127,8 @@ class EightPuzzleGUI(tk.Tk):
         except Exception as e:
             messagebox.showerror("输入错误",str(e))
             return
-
-        results = EightPuzzleAStar.compare_heuristics(initial,goal)
+        algo = self.algo_var.get()
+        results = EightPuzzleAStar.compare_heuristics(initial,goal,algo)
 
         # 清空旧数据
         for item in self.compare_table.get_children():
@@ -317,11 +317,13 @@ class EightPuzzleGUI(tk.Tk):
 
         bottom_container = tk.Frame(self)
         bottom_container.pack(fill="x", padx=16, pady=(6, 14))
+        bottom_container.columnconfigure(0, weight=1, uniform="half")
+        bottom_container.columnconfigure(1, weight=1, uniform="half")
 
         result_frame = tk.LabelFrame(
             bottom_container, text="搜索结果", font=("Microsoft YaHei UI", 10), padx=12, pady=10
         )
-        result_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        result_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
 
         self.status_label = tk.Label(
             result_frame,
@@ -361,7 +363,7 @@ class EightPuzzleGUI(tk.Tk):
         # 启发式对比结果表
         # ==========================
         compare_frame = tk.LabelFrame(bottom_container, text="启发式性能对比", font=("Microsoft YaHei UI", 10), padx=8, pady=6,)
-        compare_frame.pack(side="right", fill="both", expand=True, padx=(8, 0))
+        compare_frame.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
 
         self.compare_table = ttk.Treeview(
             compare_frame,
@@ -382,8 +384,6 @@ class EightPuzzleGUI(tk.Tk):
         self.compare_table.column("time", width=100, anchor="center")
 
         self.compare_table.pack(anchor="w", fill="x")
-
-
 
     def _load_defaults(self):
         self.initial_board.set_state(DEFAULT_GOAL)
