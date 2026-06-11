@@ -469,7 +469,7 @@ class EightPuzzleGUI(tk.Tk):
                 path, expanded = solver.solve(heuristic_name=heur_key)
             else:
                 path, expanded = solver.solve_idastar(heuristic_name=heur_key)
-            path, expanded = solver.solve(heuristic_name=heur_key)
+
             elapsed = (time.perf_counter() - start) * 1000
             verify = verify_astar_path(initial, goal, path)
             self.after(
