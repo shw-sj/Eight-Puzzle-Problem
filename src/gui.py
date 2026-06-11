@@ -315,10 +315,13 @@ class EightPuzzleGUI(tk.Tk):
             side="left"
         )
 
+        bottom_container = tk.Frame(self)
+        bottom_container.pack(fill="x", padx=16, pady=(6, 14))
+
         result_frame = tk.LabelFrame(
-            self, text="搜索结果", font=("Microsoft YaHei UI", 10), padx=12, pady=10
+            bottom_container, text="搜索结果", font=("Microsoft YaHei UI", 10), padx=12, pady=10
         )
-        result_frame.pack(fill="x", padx=16, pady=(6, 14))
+        result_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
 
         self.status_label = tk.Label(
             result_frame,
@@ -340,11 +343,25 @@ class EightPuzzleGUI(tk.Tk):
         stats_row = tk.Frame(result_frame)
         stats_row.pack(fill="x", pady=(6, 0))
 
+        self.steps_var = tk.StringVar(value="—")
+        self.expanded_var = tk.StringVar(value="—")
+        self.time_var = tk.StringVar(value="—")
+
+        for label, var in [
+            ("总步数", self.steps_var),
+            ("扩展节点数", self.expanded_var),
+            ("耗时(ms)", self.time_var),
+        ]:
+            box = tk.Frame(stats_row, padx=16)
+            box.pack(side="left")
+            tk.Label(box, text=label, font=("Microsoft YaHei UI", 9), fg="#666").pack()
+            tk.Label(box, textvariable=var, font=("Consolas", 14, "bold"), fg="#1565c0").pack()
+
         # ==========================
         # 启发式对比结果表
         # ==========================
-        compare_frame = tk.LabelFrame(self, text="启发式性能对比", font=("Microsoft YaHei UI", 10), padx=8, pady=6,)
-        compare_frame.pack(fill="x", padx=16, pady=(0, 14))
+        compare_frame = tk.LabelFrame(bottom_container, text="启发式性能对比", font=("Microsoft YaHei UI", 10), padx=8, pady=6,)
+        compare_frame.pack(side="right", fill="both", expand=True, padx=(8, 0))
 
         self.compare_table = ttk.Treeview(
             compare_frame,
@@ -364,21 +381,9 @@ class EightPuzzleGUI(tk.Tk):
         self.compare_table.column("expanded", width=100, anchor="center")
         self.compare_table.column("time", width=100, anchor="center")
 
-        self.compare_table.pack(anchor="w", fill="none")
+        self.compare_table.pack(anchor="w", fill="x")
 
-        self.steps_var = tk.StringVar(value="—")
-        self.expanded_var = tk.StringVar(value="—")
-        self.time_var = tk.StringVar(value="—")
 
-        for label, var in [
-            ("总步数", self.steps_var),
-            ("扩展节点数", self.expanded_var),
-            ("耗时(ms)", self.time_var),
-        ]:
-            box = tk.Frame(stats_row, padx=16)
-            box.pack(side="left")
-            tk.Label(box, text=label, font=("Microsoft YaHei UI", 9), fg="#666").pack()
-            tk.Label(box, textvariable=var, font=("Consolas", 14, "bold"), fg="#1565c0").pack()
 
     def _load_defaults(self):
         self.initial_board.set_state(DEFAULT_GOAL)
